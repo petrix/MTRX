@@ -9,22 +9,18 @@ colr.s = 100;
 colr.l = 50;
 let drawDelay = 50;
 var chinese = "田由甲申甴电甶男甸甹町画甼甽甾甿畀畁畂畃畄畅畆畇畈畉畊畋界畍畎畏畐畑";
+// var chinese = "0123456789";
+
+// var chinese = "ТИПАБЛИН";
+let bgCNV = document.createElement('canvas');
+let bgCTX = bgCNV.getContext('2d');
+
+let fgCNV = document.createElement('canvas');
+let fgCTX = fgCNV.getContext('2d');
+
 /////////////////////////////////////////////////////////
 chinese = [...chinese];
 console.log(chinese);
-// javascript: (function () {
-// 	var script = document.createElement('script');
-// 	script.onload = function () {
-// 		var stats = new Stats();
-// 		document.body.appendChild(stats.dom);
-// 		requestAnimationFrame(function loop() {
-// 			stats.update();
-// 			requestAnimationFrame(loop)
-// 		});
-// 	};
-// 	script.src = '//mrdoob.github.io/stats.js/build/stats.min.js';
-// 	document.head.appendChild(script);
-// })()
 let viewDebugData = false;
 
 if (localStorage.getItem('colr') != null) {
@@ -56,13 +52,12 @@ function calcColumns() {
 }
 
 function resize() {
-	CNV.style.width = CNV.width = window.innerWidth;
-	CNV.style.height = CNV.height = window.innerHeight;
+	bgCNV.style.width = fgCNV.style.width = CNV.style.width = bgCNV.width = fgCNV.width = CNV.width = window.innerWidth;
+	bgCNV.style.height = fgCNV.style.height = CNV.style.height = bgCNV.height = fgCNV.height = CNV.height = window.innerHeight;
 	calcColumns();
 	// CTX.fillStyle = "rgba(0, 0, 0, 0.07)";
-	CTX.fillStyle = "#000";
-
-	CTX.fillRect(0, 0, CNV.width, CNV.height);
+	bgCTX.fillStyle = "#000";
+	bgCTX.fillRect(0, 0, bgCNV.width, bgCNV.height);
 
 }
 resize();
@@ -70,34 +65,71 @@ window.addEventListener("resize", resize);
 
 let timer = performance.now();
 let timerArray = [];
+
+
+
+let rectPosition = 0;
+
+function fgRNDR() {
+	fgCTX.clearRect(0, 0, fgCTX.canvas.width, fgCTX.canvas.height);
+
+	rectPosition += 4;
+	fgCTX.fillStyle = '#900';
+	let txtLGNH = fgCTX.measureText('performance');
+	fgCTX.fillRect(rectPosition, 300-txtLGNH.actualBoundingBoxAscent, txtLGNH.width, txtLGNH.actualBoundingBoxAscent)
+
+	fgCTX.fillStyle = "#fff";
+	fgCTX.font = "50px Stormfaze"
+	fgCTX.fillText(`performance`, rectPosition, 300);;
+	if (rectPosition > fgCTX.canvas.width) {
+		console.log(txtLGNH)
+		rectPosition = -txtLGNH.width;
+	}
+	return fgCTX.canvas;
+}
+
 //drawing the characters
-requestAnimationFrame(function draw() {
-	// setTimeout(() => {
-		requestAnimationFrame(draw);
-	// }, drawDelay);
-	
-	CTX.fillStyle = "rgba(0, 0, 0, 0.1)";
-	CTX.fillRect(0, 0, CNV.width, CNV.height);
-	CTX.fillStyle = `hsl(${colr.h},${colr.s}%,${colr.l}%)`; //green text
-	CTX.font = fontSize + "px arial";
+function bgRNDR() {
+	///ТЕРРОБОРОНОВСКИЕ КАРАМЕЛЬКИ
+
+	bgCTX.fillStyle = "rgba(0, 0, 0, 0.2)";
+	bgCTX.fillRect(0, 0, bgCNV.width, bgCNV.height);
+	bgCTX.fillStyle = `hsl(${colr.h},${colr.s}%,${colr.l}%)`; //green text
+	bgCTX.font = fontSize + "px Stormfaze";
 	//looping over drops
 	for (var i = 0; i < drops.length; i++) {
 		//a random chinese character to print
 		var text = chinese[Math.floor(Math.random() * chinese.length)];
 		//x = i*font_size, y = value of drops[i]*font_size
-		CTX.fillText(text, i * fontSize, drops[i] * fontSize);
+		bgCTX.fillText(text, i * fontSize, drops[i] * fontSize);
 
 		//sending the drop back to the top randomly after it has crossed the screen
 		//adding a randomness to the reset to make the drops scattered on the Y axis
-		if (drops[i] * fontSize > CNV.height && Math.random() > 0.99) {
+		if (drops[i] * fontSize > bgCNV.height && Math.random() > 0.99) {
 			drops[i] = 0;
 		}
 		//incrementing Y coordinate
 		drops[i]++;
 	}
+
+	return bgCTX.canvas;
+}
+
+function RNDR() {
+	// setTimeout(() => {
+		requestAnimationFrame(RNDR);
+
+	// }, drawDelay);
+	CTX.clearRect(0, 0, CTX.canvas.width, CTX.canvas.height)
+	CTX.fillStyle = "#000";
+	CTX.fillRect(0, 0, CTX.canvas.width, CTX.canvas.height)
+	CTX.drawImage(bgRNDR(), 0, 0, bgCTX.canvas.width, bgCTX.canvas.height)
+
+	CTX.drawImage(fgRNDR(), 0, 0, fgCTX.canvas.width, fgCTX.canvas.height)
+
 	if (viewDebugData) {
 		let debugFontSize = 30;
-		CTX.font = debugFontSize + "px arial"
+		CTX.font = debugFontSize + "px Stormfaze"
 		CTX.fillStyle = "#000";
 		CTX.strokeStyle = "#fff";
 		CTX.lineWidth = 2;
@@ -112,71 +144,22 @@ requestAnimationFrame(function draw() {
 		CTX.fillText(`fontSize   - ${fontSize}`, 10, debugFontSize * 5);
 		// CTX.fillStyle = "#fff";
 		let now = performance.now();
-		timerArray.push(now-timer);
+		timerArray.push(now - timer);
 		if (timerArray.length > 20) timerArray.shift();
 		let sum = timerArray.reduce((a, b) => (a + b)) / timerArray.length;
 		CTX.fillText(`performance- ${Math.floor(1000/(now-timer))}fps`, 10, debugFontSize * 6);
 		CTX.fillText(`               - ${Math.floor(now-timer)}ms`, 10, debugFontSize * 7);
-CTX.fillText(`               - ${Math.round(sum)}`, 10, debugFontSize * 9);
-
+		CTX.fillText(`               - ${Math.round(sum)}`, 10, debugFontSize * 9);
 		timer = now;
 	}
-})
-
-// function draw() {
-// 	setTimeout(function () {
-// 		requestAnimationFrame(draw);
-// 	}, drawDelay)
-// 	// requestAnimationFrame(draw);
-// 	//Black BG for the canvas
-// 	//translucent BG to show trail
-// 	CTX.fillStyle = "rgba(0, 0, 0, 0.1)";
-// 	CTX.fillRect(0, 0, CNV.width, CNV.height);
-// 	CTX.fillStyle = `hsl(${colr.h},${colr.s}%,${colr.l}%)`; //green text
-// 	CTX.font = fontSize + "px arial";
-// 	//looping over drops
-// 	for (var i = 0; i < drops.length; i++) {
-// 		//a random chinese character to print
-// 		var text = chinese[Math.floor(Math.random() * chinese.length)];
-// 		//x = i*font_size, y = value of drops[i]*font_size
-// 		CTX.fillText(text, i * fontSize, drops[i] * fontSize);
-
-// 		//sending the drop back to the top randomly after it has crossed the screen
-// 		//adding a randomness to the reset to make the drops scattered on the Y axis
-// 		if (drops[i] * fontSize > CNV.height && Math.random() > 0.99) {
-// 			drops[i] = 0;
-// 		}
-// 		//incrementing Y coordinate
-// 		drops[i]++;
-// 	}
-// 	if (viewDebugData) {
-// 		let debugFontSize = 30;
-// 		CTX.font = debugFontSize + "px arial"
-// 		CTX.fillStyle = "#000";
-// 		CTX.strokeStyle = "#fff";
-// 		CTX.lineWidth = 2;
-// 		CTX.fillRect(0, 0, 300, 300);
-// 		CTX.strokeRect(0, 0, 300, 300);
-
-// 		CTX.fillStyle = "#fff";
-// 		CTX.fillText(`drawDelay  - ${drawDelay}`, 10, debugFontSize);
-// 		CTX.fillText(`Hue	     - ${colr.h}`, 10, debugFontSize * 2);
-// 		CTX.fillText(`Saturation - ${colr.s}`, 10, debugFontSize * 3);
-// 		CTX.fillText(`Luminance  - ${colr.l}`, 10, debugFontSize * 4);
-// 		CTX.fillText(`fontSize   - ${fontSize}`, 10, debugFontSize * 5);
-// 		// CTX.fillStyle = "#fff";
-// 		let now = performance.now();
-// 		CTX.fillText(`performance- ${Math.floor(1000/(now-timer))}fps`, 10, debugFontSize * 6);
-// 		CTX.fillText(`               - ${Math.floor(now-timer)}ms`, 10, debugFontSize * 7);
+	// CTX.translate(0,0)
+	// CTX.fillRect(0, 0, 200, 10)
 
 
-// 		timer = now;
-// 	}
-// }
-// draw();
+}
 
-
-CNV.addEventListener('click', fullScreen)
+RNDR();
+// CNV.addEventListener('click', fullScreen)
 
 function fullScreen() {
 
@@ -208,6 +191,8 @@ function keybHandler(event) {
 			break;
 		case "KEYF":
 			fullScreen();
+			break;
+
 		case "NUMPAD7":
 			colr.h += 10;
 			break;
@@ -262,6 +247,6 @@ function keybHandler(event) {
 	localStorage.setItem('fontSize', fontSize);
 	console.log(colr)
 
-	fontSize < 5 ? fontSize = 5 : false;
+	fontSize < 10 ? fontSize = 10 : false;
 	// resize();
 }
